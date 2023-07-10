@@ -1,61 +1,36 @@
-const express = require('express');
-const Order = require('../models/order.model');
+const express=require("express")
+const {OrderModel}=require("../models/order.model")
 
-const orderRouter = express.Router();
+const orderRouter=express.Router()
+ orderRouter.get("/orders/:id",async(req,res)=>{
+    try{
+        let id=req.params.id
 
-// Place a new order
-orderRouter.post('/api/orders', async (req, res) => {
-  try {
-    const { user, restaurant, items, totalPrice, deliveryAddress, status } = req.body;
-    const order = await Order.create({
-      user,
-      restaurant,
-      items,
-      totalPrice,
-      deliveryAddress,
-      status,
-    });
-    res.status(201).json(order);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to place order' });
-  }
-});
+        const orders= await OrderModel.findById(id)
+        res.status(200).send(orders)
 
-
-orderRouter.get('/api/orders/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const order = await Order.findById(id)
-      .populate('user')
-      .populate('restaurant');
-    if (!order) {
-      res.status(404).json({ error: 'Order not found' });
-      return;
+    }catch(err)
+    {
+        console.log(err)
     }
-    res.status(200).json(order);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch order' });
-  }
-});
 
-// Update the status 
-orderRouter.patch('/api/orders/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const order = await Order.findByIdAndUpdate(id, { status }, { new: true });
-    if (!order) {
-      res.status(404).json({ error: 'Order not found' });
-      return;
+})
+
+ orderRouter.patch("/orders/:id",async(req,res)=>{
+    try{
+        let id=req.params.id
+        const data=req.body
+
+        const orders= await OrderModel.findByIdAndUpdate(data)
+        res.status(200).send(orders)
+
+    }catch(err)
+    {
+        console.log(err)
     }
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update order status' });
-  }
-});
 
-module.exports =  
- orderRouter;
+})
 
-   
-
+module.exports={
+    orderRouter
+}

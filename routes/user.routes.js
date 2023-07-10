@@ -1,67 +1,93 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const UserModel = require('../models/user.model');
-require('dotenv').config();
-const jwt = require('jsonwebtoken')
+const express=require("express")
+const {UserModel}=require("../models/user.model")
+const bcrypt=require("bcrypt");
+const jwt =require("jsonwebtoken")
+const userRouter=express.Router()
 
-const userRouter = express.Router();
+//regiseter the user
+userRouter.post("/register",async(req,res)=>{
+    try{
+       const payload=req.body;
+
+            const haspass=await bcrypt.hashSync(payload.password,8)
+            payload.password=haspass;
+     
+            const newuser=new UserModel(payload)
+            await newuser.save()
+            res.status(200).send("User register")
+        
+      
+    }catch(err){
+        console.log(err.message)
+        res.send(err)
+    }
+})
 
 
-userRouter.post("/api/register", async (req, res) => {
-    const { name, email, password, address } = req.body;
-    try {
-      const hash = await bcrypt.hash(password, 10);
-      const user = new UserModel({ name, email, password: hash, address });
+userRouter.post("/login",async(req,res)=>{
+    try{
+        const payload=req.body;
+        const user= await UserModel.findOne({email:payload.email});
+        
+        if(!user)
+        {
+           res.status(400).send({msg:"please register"})
+        }
+
+        const ispasscorr=await bcrypt.compareSync(
+            payload.password,
+            user.password
+        )
+
+        if(ispasscorr)
+        {
+            const token=await jwt.sign({email:user.email,userid:user._id},"masai")
+
+            res.status(200).send({"msg":"login sucsess","token":token})
+
+        }
+        else{
+            res.status(400).send({"msg":"wrong pass"})
+        }
+
+    }catch{
+        console.log("error while login")
+    }
+})
+
+
+userRouter.put("/:id/reset",async(req,res)=>{
+    try{
+      const {id}=req.params;
+      const {currentpassword,resetpassword}=req.body;
+
+      const user=await UserModel.findById(id)
+
+      if(!user)
+      {
+        res.status(401).send("error")
+      }
+
+      const ispassvalid=bcrypt.compareSync(currentpassword,user.password)
+
+      if(!ispassvalid)
+      {
+        res.status(401).send("Password is not valid")
+      }
+
+      const hashpass=await bcrypt.hashSync(resetpassword,6)
+      user.password=hashpass
       await user.save();
-      res.send("user register")
-      res.sendStatus(201);
-    } catch (error) {
-        console.log(error)
-      res.sendStatus(500);
+
+      res.status(200).send("Password reset success")
+
+    }catch(err)
+    {
+        console.log(err)
     }
-  });
-  
-  userRouter.post("/api/login", async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      const user = await UserModel.findOne({ email });
-      if (!user) {
-        return res.sendStatus(401);
-      }
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.sendStatus(401);
-      }
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-      res.status(201).send({ token });
-    } catch (error) {
-      res.sendStatus(error.message);
-    }
-  });
-  
-  userRouter.put("/api/user/:id/reset", async (req, res) => {
-    const { id } = req.params;
-    const { oldPassword, newPassword } = req.body;
-    try {
-      const user = await UserModel.findById(id);
-      if (!user) {
-        return res.sendStatus(404);
-      }
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
-        return res.sendStatus(401);
-      }
-      const hash = await bcrypt.hash(newPassword, 10);
-      user.password = hash;
-      await user.save();
-      res.sendStatus(204);
-    } catch (error) {
-      res.sendStatus(500);
-    }
-  });
-
-module.exports = 
-  { userRouter } ;
+})
 
 
-
+module.exports={
+    userRouter
+}

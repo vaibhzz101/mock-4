@@ -1,28 +1,28 @@
-const express = require("express");
-const { connection } = require("./config/db");
-const { userRouter } = require("./routes/user.routes");
-const {  restaurantRouter } = require("./routes/restaurant.routes");
-const orderRouter  = require("./routes/order.routes");
+const express=require("express")
+require('dotenv').config()
+const {connection}=require("./config/db")
+const { userRouter } = require("./routes/user.routes")
+const { restRouter } = require("./routes/restaurant.routes")
+const { orderRouter } = require("./routes/order.routes")
+const app=express()
 
-const app = express();
-app.use(express.json());
+app.use(express.json())
+app.use("/api",userRouter)
+app.use("/api",restRouter)
+app.use("/api",orderRouter)
 
-app.get("/", (req, res) => {
-  res.send("Food Delivery App");
-});
+app.use("/",(req,res)=>{
+  res.send("Food Delivery App")
+})
 
-app.use("", userRouter);
-app.use("",  restaurantRouter);
-app.use("", orderRouter);
-
-const PORT = process.env.port || 9090;
-app.listen(PORT, async () => {
-    try {
-        await connection;
-        console.log("Connected to DB");
-    } catch (err) {
-        console.log(err);
-        console.log("Error to connect the database");
+app.listen(process.env.port,async(req,res)=>{
+    try{
+      await connection;
+      console.log("connected to db")
+    }catch(err)
+    {
+      console.log("Error in connection the database")
+      console.log(err.message)
     }
-    console.log(`Server listening on port ${PORT}`);
-});
+    console.log(`server is running at port ${process.env.PORT}`)
+})
